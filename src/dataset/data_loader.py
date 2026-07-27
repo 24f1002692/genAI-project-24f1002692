@@ -6,39 +6,11 @@ Single, shared place to load every dataset used across this project
 
   - Smart MCQ Solver competition data: train.csv, test.csv, sample_submission.csv
   - RAG resources used in Milestone 3: pre-built Wikipedia FAISS index +
-    the parquet file with the actual Wikipedia passage text
-
-Every path is overridable via environment variables so the exact same
-notebooks run unmodified on Kaggle, on Colab, or locally — just export the
-right env vars (or add a Kaggle "Add Data" input with a matching path) before
-running.
-
-Usage from any notebook:
-
-    import sys, os
-    sys.path.append(os.path.abspath("../../"))   # adjust to reach repo root
-    from src.dataset.data_loader import load_competition_data, load_rag_resources
-
-    train_dataset, test_dataset, sample_submission = load_competition_data()
-    wiki_index, wiki_index_df = load_rag_resources()
-"""
+    the parquet file with the actual Wikipedia passage text """
 
 import os
 import pandas as pd
 
-# ---------------------------------------------------------------------------
-# Paths — resolved lazily (inside functions), NOT at import time.
-#
-# Why: if this module gets imported once with no/old env vars set, Python
-# caches it (sys.modules). Setting os.environ[...] *after* that import would
-# then have no effect unless the kernel is restarted. Reading env vars inside
-# each function call instead means you can set the env var any time before
-# calling load_competition_data() / load_rag_resources() — even after import —
-# and it will always pick up the current value.
-# ---------------------------------------------------------------------------
-
-# Auto-detected fallback: <repo_root>/data, based on this file's own location
-# (src/dataset/data_loader.py -> repo root is two levels up)
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 _LOCAL_DATA_DEFAULT = os.path.join(_REPO_ROOT, "data")
 
@@ -100,7 +72,6 @@ def load_competition_data(drop_id_from_train: bool = True):
 
     return train_dataset, test_dataset, sample_submission
 
-
 # ---------------------------------------------------------------------------
 # RAG resources (used by Milestone 3)
 # ---------------------------------------------------------------------------
@@ -111,12 +82,10 @@ def load_wiki_faiss_index():
     index_path = os.path.join(_wiki_faiss_index_dir(), "wikipedia_202307.index")
     return faiss.read_index(index_path)
 
-
 def load_wiki_passages() -> pd.DataFrame:
     """Load the Wikipedia passage text that maps 1:1 to the FAISS index rows."""
     index_path = os.path.join(_wiki_text_dir(), "wiki_2023_index.parquet")
     return pd.read_parquet(index_path)
-
 
 def load_rag_resources():
     """Load everything Milestone 3 (RAG) needs in one call.
@@ -128,3 +97,11 @@ def load_rag_resources():
     wiki_index = load_wiki_faiss_index()
     wiki_index_df = load_wiki_passages()
     return wiki_index, wiki_index_df
+
+def load_retriever(retriever_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
+    """Load the MiniLM sentence-embedding retriever used to query the
+    Wikipedia FAISS index (used by Milestone 3 RAG and the from-scratch
+    BiGRU-RAG model)."""
+    from sentence_transformers import SentenceTransformer  # imported lazily
+
+    return SentenceTransformer(retriever_name)
