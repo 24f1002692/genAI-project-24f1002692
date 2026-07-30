@@ -1,1 +1,4 @@
 "notebooks/Milestones/" 
+outputs/*/submission_*.csv
+__pycache__/
+*.pyc
