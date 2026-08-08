@@ -44,7 +44,7 @@ class RAG_predictor:
     self.model.eval()
     print("RAGPredictor ready.")
 
-    def retrieve(self, query: str, k: int = 3) -> list[str]:
+  def retrieve(self, query: str, k: int = 3) -> list[str]:
       """Embed query, search Wikipedia FAISS index, return top-k article texts."""
       query_vec = self.retriever.encode(
           [query], convert_to_numpy=True, normalize_embeddings=True
@@ -59,7 +59,7 @@ class RAG_predictor:
               passages.append(f"{row['title']}: {row['text'][:300]}")
       return passages
 
-    def build_prompt(self, row, passages: list[str]) -> str:
+  def build_prompt(self, row, passages: list[str]) -> str:
       context = "\n".join(f"- {p}" for p in passages)
       options = "  ".join(f"{opt}) {row[opt]}" for opt in OPTIONS)
       return (
@@ -69,7 +69,7 @@ class RAG_predictor:
           f"Which option is correct? Answer with only the letter (A, B, C, D, or E)."
       )
 
-    def flan_top3(self, prompt_text: str) -> str:
+  def flan_top3(self, prompt_text: str) -> str:
       """Run Flan-T5 once, rank all 5 options by logits, return top-3 letters."""
       inputs = self.tokenizer(
           prompt_text, return_tensors="pt", max_length=512, truncation=True
@@ -92,8 +92,8 @@ class RAG_predictor:
       ranked = sorted(option_logits, key=option_logits.get, reverse=True)
       return " ".join(ranked[:3])
 
-    def predict_top3(self, row, k: int = 3) -> str:
-      """End-to-end: retrieve passages, build prompt, get Flan-T5's top-3 letters."""
-      passages = self.retrieve(row['prompt'], k=k)
-      prompt_text = self.build_prompt(row, passages)
-      return self.flan_top3(prompt_text)
+  def predict_top3(self, row, k: int = 3) -> str:
+    """End-to-end: retrieve passages, build prompt, get Flan-T5's top-3 letters."""
+    passages = self.retrieve(row['prompt'], k=k)
+    prompt_text = self.build_prompt(row, passages)
+    return self.flan_top3(prompt_text)
